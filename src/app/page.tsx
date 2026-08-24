@@ -1,5 +1,6 @@
 import { startCheckout } from "@/app/actions/checkout";
 import { expireOverdueSessions, getActiveSessionById } from "@/lib/access";
+import { DemoBanner } from "@/components/DemoBanner";
 import { hotelName } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { getGuestSessionId, normalizeMac } from "@/lib/device";
@@ -35,7 +36,8 @@ export default async function HomePage({
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 py-10">
-      <p className="text-sm font-medium text-slate-500">{hotelName}</p>
+      <DemoBanner />
+      <p className="mt-6 text-sm font-medium text-slate-500">{hotelName}</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">
         Quanto tempo você precisa?
       </h1>

@@ -4,6 +4,7 @@ import {
   revokeAccessAction,
   updatePlanPriceAction,
 } from "@/app/actions/admin";
+import { DemoBanner } from "@/components/DemoBanner";
 import { expireOverdueSessions } from "@/lib/access";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { hotelName } from "@/lib/config";
@@ -48,7 +49,8 @@ export default async function AdminPage() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-8">
-      <header className="flex items-center justify-between gap-4">
+      <DemoBanner />
+      <header className="mt-6 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm text-slate-500">{hotelName}</p>
           <h1 className="text-2xl font-semibold tracking-tight">Acessos</h1>
