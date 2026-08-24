@@ -7,7 +7,7 @@ Sistema genérico para hotel, pousada ou qualquer rede: o hóspede conecta, esco
 ```text
 Aparelho entra no Wi-Fi
         ↓
-Roteador abre esta página (captive portal)
+MikroTik abre esta página (captive portal)
         ↓
 Hóspede escolhe 1h / 3h / 6h / 24h
         ↓
@@ -15,11 +15,9 @@ Pagamento PIX (ou outro provedor)
         ↓
 API avisa POST /api/payments/webhook  { "status": "paid" }
         ↓
-App cria uma sessão com hora de término
+App cria usuário no Hotspot com limit-uptime
         ↓
-Controlador da rede libera o aparelho
-        ↓
-Tempo acaba (ou a recepção encerra) → acesso cai
+Aparelho autentica e navega até o prazo acabar
 ```
 
 Há duas telas:
@@ -29,23 +27,42 @@ Há duas telas:
 
 Senha inicial do painel: `admin`
 
-## Como controlamos o acesso
+## MikroTik
 
-O app é a **fonte da verdade**. O roteador só executa.
+Este projeto usa **MikroTik RouterOS 7** (API REST). O app precisa alcançar o roteador na LAN — o servidor deve ficar no hotel (mini PC, Raspberry Pi, etc.).
 
-1. Cada pagamento gera uma **sessão** (`Session`) com `deviceMac`, `startedAt` e `endsAt`.
-2. Na hora do pagamento confirmado, o app chama um **adaptador de rede** (`grantAccess`).
-3. O adaptador fala com o equipamento (MikroTik Hotspot, UniFi, pfSense, RADIUS…). No demo, o adaptador é `mock` e só registra o comando.
-4. O próprio roteador corta o acesso quando o tempo acaba (`limit-uptime` no Hotspot). O app também marca a sessão como `EXPIRED` e pode chamar `revokeAccess`.
-5. A recepção pode encerrar na hora. Isso chama `revokeAccess` e derruba o aparelho.
+Recomendação de equipamento:
 
-O cookie no celular só serve para a tela “Você está online”. **Quem libera a internet é o roteador**, identificando o aparelho pelo MAC (ou usuário do Hotspot).
+- Pousada pequena: **hAP ax2** (roteador + Wi-Fi)
+- Hotel com vários APs: **hEX (RB750Gr3)** + access points
 
-No equipamento, o captive portal deve:
+No MikroTik:
 
-- redirecionar quem não pagou para esta aplicação
-- deixar passar (walled garden) o domínio do app e o do PIX
-- receber o usuário/MAC que o app criar com o tempo pago
+1. Crie o Hotspot no IP da rede de hóspedes.
+2. Libere PAP em **IP → Hotspot → Server Profiles → Login**: `http-pap`.
+3. Crie um usuário só para o app (`wifi-app`) com permissão de escrita.
+4. Ative o serviço `www` (a REST usa ele).
+5. No walled garden, deixe passar o endereço deste app e o do PIX.
+6. No `login.html` do Hotspot, redirecione para o app:
+
+```html
+<meta http-equiv="refresh" content="0; url=http://IP-DO-APP:3000/?mac=$(mac)&ip=$(ip)&link-login-only=$(link-login-only)">
+```
+
+No `.env` do servidor:
+
+```env
+NETWORK_PROVIDER=mikrotik
+MIKROTIK_HOST=192.168.88.1
+MIKROTIK_USER=wifi-app
+MIKROTIK_PASSWORD=senha
+MIKROTIK_LOGIN_URL=http://10.5.50.1/login
+APP_URL=http://IP-DO-APP:3000
+```
+
+Quando o pagamento confirma, o app cria `/ip/hotspot/user` com `limit-uptime` (o próprio MikroTik corta o tempo). Encerrar no painel remove o usuário e derruba a sessão ativa.
+
+Para desenvolver sem roteador, mantenha `NETWORK_PROVIDER=mock`.
 
 ## Pagamento
 
@@ -61,7 +78,7 @@ Content-Type: application/json
 }
 ```
 
-Ou use `paymentRef` no lugar de `orderId`. Em modo demo (`PAYMENT_PROVIDER=mock`) existe o botão **Simular pagamento**.
+Em modo demo (`PAYMENT_PROVIDER=mock`) existe o botão **Simular pagamento**.
 
 ## Rodar
 
@@ -76,7 +93,7 @@ npm run dev
 - Hóspede: [http://localhost:3000](http://localhost:3000)
 - Painel: [http://localhost:3000/admin](http://localhost:3000/admin)
 
-Para simular o captive portal com MAC do aparelho: `http://localhost:3000/?mac=AA:BB:CC:DD:EE:FF`
+Para simular o captive portal: `http://localhost:3000/?mac=AA:BB:CC:DD:EE:FF`
 
 ## Pasta do código
 
@@ -84,6 +101,6 @@ Para simular o captive portal com MAC do aparelho: `http://localhost:3000/?mac=A
 src/app/                  telas do hóspede e do painel
 src/app/api/payments/     webhook que confirma o pagamento
 src/lib/access.ts         cria, expira e encerra sessões
-src/lib/network/          adaptador da rede (mock hoje, MikroTik depois)
+src/lib/network/          MikroTik REST + modo demo
 src/lib/payments/         gera a cobrança PIX
 ```

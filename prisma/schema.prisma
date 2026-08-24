@@ -48,9 +48,10 @@ model Session {
   deviceMac   String?
   startedAt   DateTime @default(now())
   endsAt      DateTime
-  status      String   @default("ACTIVE")
-  networkUser String?
-  source      String   @default("ONLINE")
+  status          String   @default("ACTIVE")
+  networkUser     String?
+  networkPassword String?
+  source          String   @default("ONLINE")
   createdAt   DateTime @default(now())
 
   @@index([status, endsAt])

@@ -11,7 +11,11 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ mac?: string }>;
+  searchParams: Promise<{
+    mac?: string;
+    "link-login-only"?: string;
+    "link-login"?: string;
+  }>;
 }) {
   await expireOverdueSessions();
 
@@ -21,8 +25,9 @@ export default async function HomePage({
     if (session) redirect("/conectado");
   }
 
-  const { mac } = await searchParams;
-  const deviceMac = normalizeMac(mac) ?? "";
+  const params = await searchParams;
+  const deviceMac = normalizeMac(params.mac) ?? "";
+  const login = params["link-login-only"] ?? params["link-login"] ?? "";
   const plans = await prisma.plan.findMany({
     where: { active: true },
     orderBy: { sortOrder: "asc" },
@@ -43,6 +48,7 @@ export default async function HomePage({
           <form action={startCheckout} key={plan.id}>
             <input type="hidden" name="planId" value={plan.id} />
             {deviceMac ? <input type="hidden" name="mac" value={deviceMac} /> : null}
+            {login ? <input type="hidden" name="login" value={login} /> : null}
             <button
               type="submit"
               className="flex h-[4.5rem] w-full items-center justify-between rounded-2xl bg-white px-5 text-left shadow-sm ring-1 ring-slate-200 transition active:scale-[0.99]"

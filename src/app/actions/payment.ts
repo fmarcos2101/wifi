@@ -5,6 +5,7 @@ import { isMockPayments } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { markOrderPaid } from "@/lib/access";
 import { setGuestSessionCookie } from "@/lib/device";
+import { mikrotikLoginHref } from "@/lib/network/login-redirect";
 
 export async function simulatePayment(formData: FormData) {
   if (!isMockPayments) {
@@ -17,5 +18,6 @@ export async function simulatePayment(formData: FormData) {
 
   const { session } = await markOrderPaid(order.id);
   await setGuestSessionCookie(session.id, session.endsAt);
-  redirect("/conectado");
+  const hotspotLogin = await mikrotikLoginHref(session);
+  redirect(hotspotLogin ?? "/conectado");
 }

@@ -8,9 +8,10 @@ type Props = {
   sessionId: string;
   hoursLabel: string;
   endsAt: string;
+  loginHref?: string | null;
 };
 
-export function ConnectedView({ sessionId, hoursLabel, endsAt }: Props) {
+export function ConnectedView({ sessionId, hoursLabel, endsAt, loginHref }: Props) {
   const router = useRouter();
   const [label, setLabel] = useState(() => formatRemaining(new Date(endsAt)));
 
@@ -53,6 +54,14 @@ export function ConnectedView({ sessionId, hoursLabel, endsAt }: Props) {
       <p className="mt-2 text-sm text-slate-600">{hoursLabel} liberadas neste aparelho</p>
       <p className="mt-8 text-5xl font-semibold tabular-nums tracking-tight">{label}</p>
       <p className="mt-2 text-sm text-slate-500">restantes</p>
+      {loginHref ? (
+        <a
+          href={loginHref}
+          className="mt-8 flex h-12 w-full items-center justify-center rounded-2xl bg-slate-900 text-sm font-medium text-white"
+        >
+          Liberar internet
+        </a>
+      ) : null}
     </main>
   );
 }

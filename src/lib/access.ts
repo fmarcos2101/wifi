@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { getNetworkController } from "@/lib/network";
+import { randomHotspotPassword } from "@/lib/network/password";
 
 export async function expireOverdueSessions(now = new Date()) {
   const overdue = await prisma.session.findMany({
@@ -51,11 +52,13 @@ export async function grantPaidAccess(orderId: string) {
   if (order.session) return order.session;
 
   const networkUser = `wifi-${order.id.slice(-8)}`;
+  const networkPassword = randomHotspotPassword();
   const endsAt = new Date(Date.now() + order.hours * 60 * 60 * 1000);
   const network = getNetworkController();
 
   await network.grantAccess({
     username: networkUser,
+    password: networkPassword,
     hours: order.hours,
     mac: order.deviceMac,
   });
@@ -69,6 +72,7 @@ export async function grantPaidAccess(orderId: string) {
       deviceMac: order.deviceMac,
       endsAt,
       networkUser,
+      networkPassword,
       source: "ONLINE",
       status: "ACTIVE",
     },
@@ -94,11 +98,13 @@ export async function grantReceptionAccess(input: {
   if (!plan || !plan.active) throw new Error("Plano inválido");
 
   const networkUser = `wifi-rec-${Date.now().toString(36)}`;
+  const networkPassword = randomHotspotPassword();
   const endsAt = new Date(Date.now() + plan.hours * 60 * 60 * 1000);
   const network = getNetworkController();
 
   await network.grantAccess({
     username: networkUser,
+    password: networkPassword,
     hours: plan.hours,
     mac: input.deviceMac,
   });
@@ -111,6 +117,7 @@ export async function grantReceptionAccess(input: {
       deviceMac: input.deviceMac ?? null,
       endsAt,
       networkUser,
+      networkPassword,
       source: "RECEPTION",
       status: "ACTIVE",
     },

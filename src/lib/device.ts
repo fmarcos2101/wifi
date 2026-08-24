@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 
 const MAC_COOKIE = "wifi_mac";
 export const SESSION_COOKIE = "wifi_session";
+export const LOGIN_COOKIE = "wifi_login";
 
 export function sessionCookieOptions(endsAt: Date) {
   const maxAge = Math.max(60, Math.floor((endsAt.getTime() - Date.now()) / 1000));
@@ -50,6 +51,22 @@ export async function setGuestSessionCookie(sessionId: string, endsAt: Date) {
 export async function getGuestSessionId() {
   const store = await cookies();
   return store.get(SESSION_COOKIE)?.value ?? null;
+}
+
+export async function rememberHotspotLogin(loginBase: string | null) {
+  if (!loginBase) return;
+  const store = await cookies();
+  store.set(LOGIN_COOKIE, loginBase, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 6,
+  });
+}
+
+export async function getHotspotLoginBase() {
+  const store = await cookies();
+  return store.get(LOGIN_COOKIE)?.value ?? process.env.MIKROTIK_LOGIN_URL?.trim() ?? null;
 }
 
 export async function clearGuestSessionCookie() {

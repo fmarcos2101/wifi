@@ -4,3 +4,4 @@ export const networkProvider = process.env.NETWORK_PROVIDER || "mock";
 export const adminPassword = process.env.ADMIN_PASSWORD || "admin";
 export const adminSecret = process.env.ADMIN_SECRET || "dev-secret";
 export const isMockPayments = paymentProvider === "mock";
+export const appUrl = process.env.APP_URL?.replace(/\/$/, "") ?? "";

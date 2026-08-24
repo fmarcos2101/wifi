@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { getDeviceMac, normalizeMac, rememberDeviceMac } from "@/lib/device";
+import { getDeviceMac, normalizeMac, rememberDeviceMac, rememberHotspotLogin } from "@/lib/device";
 import { getPaymentProvider } from "@/lib/payments";
 import { expireOverdueSessions } from "@/lib/access";
 
@@ -18,6 +18,7 @@ export async function startCheckout(formData: FormData) {
   const deviceMac =
     normalizeMac(String(formData.get("mac") ?? "")) ?? (await getDeviceMac());
   await rememberDeviceMac(deviceMac);
+  await rememberHotspotLogin(String(formData.get("login") ?? "").trim() || null);
   const order = await prisma.order.create({
     data: {
       planId: plan.id,

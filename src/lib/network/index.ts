@@ -7,3 +7,13 @@ export function getNetworkController(): NetworkController {
   if (networkProvider === "mikrotik") return mikrotikNetwork;
   return mockNetwork;
 }
+
+export function isMikrotikEnabled() {
+  return networkProvider === "mikrotik";
+}
+
+export function networkLabel() {
+  if (networkProvider !== "mikrotik") return "demo (sem roteador)";
+  const host = process.env.MIKROTIK_HOST?.trim();
+  return host ? `MikroTik ${host}` : "MikroTik (host não definido)";
+}

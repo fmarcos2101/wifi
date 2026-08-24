@@ -9,6 +9,7 @@ import { isAdminAuthenticated } from "@/lib/auth";
 import { hotelName } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { formatBRL, formatHours, formatRemaining, startOfToday } from "@/lib/money";
+import { networkLabel } from "@/lib/network";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,7 @@ export default async function AdminPage() {
         <div>
           <p className="text-sm text-slate-500">{hotelName}</p>
           <h1 className="text-2xl font-semibold tracking-tight">Acessos</h1>
+          <p className="mt-1 text-xs text-slate-500">Rede: {networkLabel()}</p>
         </div>
         <form action={adminLogout}>
           <button type="submit" className="text-sm text-slate-500 hover:text-slate-800">

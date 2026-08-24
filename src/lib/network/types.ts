@@ -1,5 +1,6 @@
 export type GrantAccessInput = {
   username: string;
+  password: string;
   hours: number;
   mac?: string | null;
 };
