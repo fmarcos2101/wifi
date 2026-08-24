@@ -5,6 +5,11 @@ import {
   type RouterOsClient,
 } from "@/lib/network/routeros";
 import type { GrantAccessInput, NetworkController } from "@/lib/network/types";
+import {
+  WALLED_GARDEN_COMMENT,
+  missingWalledGardenHosts,
+  walledGardenHosts,
+} from "@/lib/network/walled-garden";
 
 export function createMikrotikNetwork(client: RouterOsClient): NetworkController {
   return {
@@ -41,6 +46,29 @@ export function createMikrotikNetwork(client: RouterOsClient): NetworkController
       }
     },
   };
+}
+
+export async function applyWalledGarden(
+  client: RouterOsClient,
+  hosts = walledGardenHosts(),
+) {
+  const existing = await client.get("/ip/hotspot/walled-garden");
+  const missing = missingWalledGardenHosts(existing, hosts);
+  for (const host of missing) {
+    await client.put("/ip/hotspot/walled-garden", {
+      "dst-host": host,
+      action: "allow",
+      comment: WALLED_GARDEN_COMMENT,
+    });
+  }
+  return {
+    added: missing,
+    total: hosts.length,
+  };
+}
+
+export async function applyWalledGardenFromEnv() {
+  return applyWalledGarden(createRouterOsClient(mikrotikConfigFromEnv()));
 }
 
 export const mikrotikNetwork: NetworkController = {

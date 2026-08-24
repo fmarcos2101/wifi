@@ -6,8 +6,12 @@ import {
   hotspotUserPayload,
   limitUptime,
 } from "./hotspot";
-import { createMikrotikNetwork } from "./mikrotik";
+import { applyWalledGarden, createMikrotikNetwork } from "./mikrotik";
 import type { RouterOsClient, RouterOsItem } from "./routeros";
+import {
+  missingWalledGardenHosts,
+  renderWalledGardenScript,
+} from "./walled-garden";
 
 test("limit-uptime usa horas e dias do RouterOS", () => {
   assert.equal(limitUptime(1), "1h");
@@ -138,4 +142,45 @@ test("revoke derruba sessão ativa e apaga o usuário", async () => {
     "/ip/hotspot/active/%2AA",
     "/ip/hotspot/user/%2A1",
   ]);
+});
+
+test("walled garden só adiciona hosts que ainda não existem", () => {
+  const missing = missingWalledGardenHosts(
+    [{ "dst-host": "*.mercadopago.com" }],
+    ["*.mercadopago.com", "api.mercadopago.com"],
+  );
+  assert.deepEqual(missing, ["api.mercadopago.com"]);
+});
+
+test("script do MikroTik libera portal e PIX", () => {
+  const script = renderWalledGardenScript(["hotel.exemplo.com", "*.mercadopago.com"]);
+  assert.match(script, /dst-host=hotel.exemplo.com/);
+  assert.match(script, /dst-host=\*\.mercadopago.com/);
+  assert.match(script, /walled-garden/);
+});
+
+test("apply walled garden cria regras novas", async () => {
+  const puts: string[] = [];
+  const client: RouterOsClient = {
+    async get() {
+      return [{ "dst-host": "captive.apple.com" }];
+    },
+    async put(_path, body) {
+      puts.push(body["dst-host"]);
+      return body;
+    },
+    async patch() {
+      return {};
+    },
+    async delete() {
+      return;
+    },
+  };
+
+  const result = await applyWalledGarden(client, [
+    "captive.apple.com",
+    "*.mercadopago.com",
+  ]);
+  assert.deepEqual(result.added, ["*.mercadopago.com"]);
+  assert.deepEqual(puts, ["*.mercadopago.com"]);
 });

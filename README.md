@@ -57,6 +57,8 @@ No MikroTik:
 4. Ative o serviço `www` (a REST usa ele).
 5. Suba um túnel WireGuard até o VPS e use o IP do túnel como `MIKROTIK_HOST`.
 6. No walled garden, deixe passar o domínio do app na nuvem e o do PIX.
+   As regras prontas estão em `scripts/mikrotik-walled-garden.rsc` e no painel
+   **Internet para pagar**. Sem isso o hóspede não consegue abrir o PIX.
 7. No `login.html` do Hotspot, redirecione para o app:
 
 ```html
@@ -75,6 +77,18 @@ APP_URL=https://SEU-DOMINIO
 ```
 
 Quando o pagamento confirma, o app cria `/ip/hotspot/user` com `limit-uptime` (o próprio MikroTik corta o tempo). Encerrar no painel remove o usuário e derruba a sessão ativa.
+
+### Internet só para pagar
+
+Até o PIX confirmar, o Hotspot bloqueia a navegação. A regra (walled garden) libera:
+
+- o site deste app
+- Mercado Pago / PIX no navegador
+- os endereços que o celular usa para abrir a tela de login (Apple/Google)
+
+O restante da internet continua fechado. Cole `scripts/mikrotik-walled-garden.rsc` no Terminal do MikroTik, ou no painel use **Aplicar no MikroTik**.
+
+O app do banco no celular às vezes usa o 4G, não o Wi-Fi. Isso é normal e ajuda o PIX copiar-e-colar.
 
 Para desenvolver sem roteador, mantenha `NETWORK_PROVIDER=mock`.
 

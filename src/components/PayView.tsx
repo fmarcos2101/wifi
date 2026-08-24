@@ -72,7 +72,8 @@ export function PayView({
         {hoursLabel} · {amountLabel}
       </h1>
       <p className="mt-2 text-sm leading-6 text-slate-600">
-        Pague no PIX. Assim que a API confirmar, a rede libera sozinha.
+        Pague no PIX. Assim que a API confirmar, a rede libera sozinha. Até lá, no
+        hotel só este site e o pagamento passam.
       </p>
 
       <div className="mt-8 flex flex-col items-center rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">

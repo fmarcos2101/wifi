@@ -9,6 +9,8 @@ import {
   passwordMatches,
   setAdminCookie,
 } from "@/lib/auth";
+import { isMikrotikEnabled } from "@/lib/network";
+import { applyWalledGardenFromEnv } from "@/lib/network/mikrotik";
 import { revalidatePath } from "next/cache";
 
 async function requireAdmin() {
@@ -57,5 +59,14 @@ export async function updatePlanPriceAction(formData: FormData) {
     where: { id: planId },
     data: { priceCents: Math.round(price * 100) },
   });
+  revalidatePath("/admin");
+}
+
+export async function applyWalledGardenAction() {
+  await requireAdmin();
+  if (!isMikrotikEnabled()) {
+    throw new Error("Ligue NETWORK_PROVIDER=mikrotik para aplicar no roteador");
+  }
+  await applyWalledGardenFromEnv();
   revalidatePath("/admin");
 }

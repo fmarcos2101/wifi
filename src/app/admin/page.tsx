@@ -1,5 +1,6 @@
 import {
   adminLogout,
+  applyWalledGardenAction,
   grantReceptionAction,
   revokeAccessAction,
   updatePlanPriceAction,
@@ -10,7 +11,8 @@ import { isAdminAuthenticated } from "@/lib/auth";
 import { hotelName } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { formatBRL, formatHours, formatRemaining, startOfToday } from "@/lib/money";
-import { networkLabel } from "@/lib/network";
+import { isMikrotikEnabled, networkLabel } from "@/lib/network";
+import { renderWalledGardenScript, walledGardenHosts } from "@/lib/network/walled-garden";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +48,8 @@ export default async function AdminPage() {
   ]);
 
   const revenueCents = paidToday._sum.amountCents ?? 0;
+  const paymentHosts = walledGardenHosts();
+  const paymentScript = renderWalledGardenScript(paymentHosts);
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-8">
@@ -67,6 +71,36 @@ export default async function AdminPage() {
         <Stat label="Online agora" value={String(activeSessions.length)} />
         <Stat label="Pagamentos hoje" value={String(paidToday._count)} />
         <Stat label="Valor hoje" value={formatBRL(revenueCents)} />
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold">Internet para pagar</h2>
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          No MikroTik isso se chama walled garden: até o PIX confirmar, o hóspede só
+          acessa este portal e o pagamento. O restante da internet continua
+          bloqueado.
+        </p>
+        <ul className="mt-3 grid gap-1 rounded-2xl bg-white px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200">
+          {paymentHosts.map((host) => (
+            <li key={host} className="font-mono text-xs sm:text-sm">
+              {host}
+            </li>
+          ))}
+        </ul>
+        {isMikrotikEnabled() ? (
+          <form action={applyWalledGardenAction} className="mt-3">
+            <button
+              type="submit"
+              className="h-11 rounded-xl bg-slate-900 px-4 text-sm font-medium text-white"
+            >
+              Aplicar no MikroTik
+            </button>
+          </form>
+        ) : (
+          <pre className="mt-3 overflow-x-auto rounded-2xl bg-slate-900 p-4 text-xs leading-5 text-slate-100">
+            {paymentScript}
+          </pre>
+        )}
       </section>
 
       <section className="mt-10">
