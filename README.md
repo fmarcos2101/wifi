@@ -27,14 +27,27 @@ Há duas telas:
 
 Senha inicial do painel: `admin`
 
-## MikroTik
+## Onde cada peça fica
 
-Este projeto usa **MikroTik RouterOS 7** (API REST). O app precisa alcançar o roteador na LAN — o servidor deve ficar no hotel (mini PC, Raspberry Pi, etc.).
+Não precisa de servidor no hotel (nem mini PC, nem Raspberry Pi).
+
+| Peça | Onde |
+| --- | --- |
+| Site do hóspede, painel e pagamento | Nuvem (VPS) |
+| MikroTik | Só no hotel, como roteador Wi-Fi |
+| Celular do hóspede | Entra no Wi-Fi, abre o site na nuvem, depois autentica no Hotspot |
+
+O app na nuvem precisa **falar com o MikroTik** para criar/apagar o usuário do Hotspot. O caminho simples, sem abrir a API na internet, é **WireGuard no próprio MikroTik** (RouterOS 7 já tem) até o VPS. O hóspede continua autenticando em `http://10.5.50.1/login` — isso roda no celular, na rede do hotel.
+
+Não use só Vercel/Netlify para este passo: a API do roteador precisa de um VPS com IP estável (Hostinger, DigitalOcean, Railway, etc.).
+
+## MikroTik
 
 Recomendação de equipamento:
 
 - Pousada pequena: **hAP ax2** (roteador + Wi-Fi)
 - Hotel com vários APs: **hEX (RB750Gr3)** + access points
+- RouterOS **7** (REST + WireGuard)
 
 No MikroTik:
 
@@ -42,22 +55,23 @@ No MikroTik:
 2. Libere PAP em **IP → Hotspot → Server Profiles → Login**: `http-pap`.
 3. Crie um usuário só para o app (`wifi-app`) com permissão de escrita.
 4. Ative o serviço `www` (a REST usa ele).
-5. No walled garden, deixe passar o endereço deste app e o do PIX.
-6. No `login.html` do Hotspot, redirecione para o app:
+5. Suba um túnel WireGuard até o VPS e use o IP do túnel como `MIKROTIK_HOST`.
+6. No walled garden, deixe passar o domínio do app na nuvem e o do PIX.
+7. No `login.html` do Hotspot, redirecione para o app:
 
 ```html
-<meta http-equiv="refresh" content="0; url=http://IP-DO-APP:3000/?mac=$(mac)&ip=$(ip)&link-login-only=$(link-login-only)">
+<meta http-equiv="refresh" content="0; url=https://SEU-DOMINIO/?mac=$(mac)&ip=$(ip)&link-login-only=$(link-login-only)">
 ```
 
-No `.env` do servidor:
+No `.env` do VPS:
 
 ```env
 NETWORK_PROVIDER=mikrotik
-MIKROTIK_HOST=192.168.88.1
+MIKROTIK_HOST=10.8.0.2
 MIKROTIK_USER=wifi-app
 MIKROTIK_PASSWORD=senha
 MIKROTIK_LOGIN_URL=http://10.5.50.1/login
-APP_URL=http://IP-DO-APP:3000
+APP_URL=https://SEU-DOMINIO
 ```
 
 Quando o pagamento confirma, o app cria `/ip/hotspot/user` com `limit-uptime` (o próprio MikroTik corta o tempo). Encerrar no painel remove o usuário e derruba a sessão ativa.
