@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getNetworkController } from "@/lib/network";
 import { randomHotspotPassword } from "@/lib/network/password";
+import type { Prisma } from "@prisma/client";
 
 export async function expireOverdueSessions(now = new Date()) {
   const overdue = await prisma.session.findMany({
@@ -63,20 +64,19 @@ export async function grantPaidAccess(orderId: string) {
     mac: order.deviceMac,
   });
 
-  const session = await prisma.session.create({
-    data: {
-      orderId: order.id,
-      planId: order.planId,
-      hours: order.hours,
-      amountCents: order.amountCents,
-      deviceMac: order.deviceMac,
-      endsAt,
-      networkUser,
-      networkPassword,
-      source: "ONLINE",
-      status: "ACTIVE",
-    },
-  });
+  const data: Prisma.SessionUncheckedCreateInput = {
+    orderId: order.id,
+    planId: order.planId,
+    hours: order.hours,
+    amountCents: order.amountCents,
+    deviceMac: order.deviceMac,
+    endsAt,
+    networkUser,
+    networkPassword,
+    source: "ONLINE",
+    status: "ACTIVE",
+  };
+  const session = await prisma.session.create({ data });
 
   await prisma.auditLog.create({
     data: {
@@ -109,19 +109,18 @@ export async function grantReceptionAccess(input: {
     mac: input.deviceMac,
   });
 
-  const session = await prisma.session.create({
-    data: {
-      planId: plan.id,
-      hours: plan.hours,
-      amountCents: plan.priceCents,
-      deviceMac: input.deviceMac ?? null,
-      endsAt,
-      networkUser,
-      networkPassword,
-      source: "RECEPTION",
-      status: "ACTIVE",
-    },
-  });
+  const data: Prisma.SessionUncheckedCreateInput = {
+    planId: plan.id,
+    hours: plan.hours,
+    amountCents: plan.priceCents,
+    deviceMac: input.deviceMac ?? null,
+    endsAt,
+    networkUser,
+    networkPassword,
+    source: "RECEPTION",
+    status: "ACTIVE",
+  };
+  const session = await prisma.session.create({ data });
 
   await prisma.auditLog.create({
     data: {
@@ -159,14 +158,23 @@ export async function revokeSession(sessionId: string) {
 }
 
 export async function markOrderPaid(orderId: string) {
-  const order = await prisma.order.update({
+  const current = await prisma.order.findUnique({
     where: { id: orderId },
-    data: {
-      status: "PAID",
-      paidAt: new Date(),
-    },
+    include: { session: true },
   });
+  if (!current) throw new Error("Pedido não encontrado");
 
-  const session = await grantPaidAccess(order.id);
+  if (current.status !== "PAID") {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: "PAID",
+        paidAt: new Date(),
+      },
+    });
+  }
+
+  const session = await grantPaidAccess(orderId);
+  const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId } });
   return { order, session };
 }

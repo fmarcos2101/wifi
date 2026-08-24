@@ -37,15 +37,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "order_not_found" }, { status: 404 });
   }
 
-  if (order.status === "PAID") {
-    return NextResponse.json({ ok: true, alreadyPaid: true, orderId: order.id });
-  }
-
   const result = await markOrderPaid(order.id);
   return NextResponse.json({
     ok: true,
     orderId: result.order.id,
     sessionId: result.session.id,
     endsAt: result.session.endsAt,
+    alreadyPaid: order.status === "PAID",
   });
 }

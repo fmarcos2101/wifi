@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { simulatePayment } from "@/app/actions/payment";
 
 type Props = {
   orderId: string;
@@ -24,6 +23,8 @@ export function PayView({
 }: Props) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setInterval(async () => {
@@ -43,6 +44,25 @@ export function PayView({
     await navigator.clipboard.writeText(copyPaste);
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
+  }
+
+  async function confirmDemoPayment() {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/payments/webhook", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orderId, status: "paid" }),
+      });
+      if (!response.ok) {
+        throw new Error("fail");
+      }
+      router.replace(`/conectado/claim?pedido=${orderId}`);
+    } catch {
+      setError("Não deu para confirmar. Tente de novo.");
+      setBusy(false);
+    }
   }
 
   return (
@@ -79,16 +99,17 @@ export function PayView({
       </button>
 
       {demoMode ? (
-        <form action={simulatePayment} className="mt-3">
-          <input type="hidden" name="orderId" value={orderId} />
-          <button
-            type="submit"
-            className="h-12 w-full rounded-2xl border border-slate-200 bg-white text-sm font-medium text-slate-700"
-          >
-            Simular pagamento
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={confirmDemoPayment}
+          disabled={busy}
+          className="mt-3 h-12 w-full rounded-2xl border border-slate-200 bg-white text-sm font-medium text-slate-700 disabled:opacity-60"
+        >
+          {busy ? "Liberando…" : "Simular pagamento"}
+        </button>
       ) : null}
+
+      {error ? <p className="mt-3 text-center text-sm text-red-600">{error}</p> : null}
 
       <Link
         href="/"
