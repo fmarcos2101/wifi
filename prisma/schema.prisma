@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Plan {
+  id          String    @id @default(cuid())
+  name        String
+  hours       Int
+  priceCents  Int
+  active      Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  orders      Order[]
+  sessions    Session[]
+}
+
+model Order {
+  id           String    @id @default(cuid())
+  planId       String
+  plan         Plan      @relation(fields: [planId], references: [id])
+  hours        Int
+  amountCents  Int
+  status       String    @default("PENDING")
+  paymentRef   String?   @unique
+  pixCopyPaste String?
+  deviceMac    String?
+  session      Session?
+  createdAt    DateTime  @default(now())
+  paidAt       DateTime?
+
+  @@index([status])
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  orderId     String?  @unique
+  order       Order?   @relation(fields: [orderId], references: [id])
+  planId      String?
+  plan        Plan?    @relation(fields: [planId], references: [id])
+  hours       Int
+  amountCents Int      @default(0)
+  deviceMac   String?
+  startedAt   DateTime @default(now())
+  endsAt      DateTime
+  status      String   @default("ACTIVE")
+  networkUser String?
+  source      String   @default("ONLINE")
+  createdAt   DateTime @default(now())
+
+  @@index([status, endsAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  detail    String
+  createdAt DateTime @default(now())
+}
