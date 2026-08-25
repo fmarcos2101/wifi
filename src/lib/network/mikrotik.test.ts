@@ -137,7 +137,7 @@ test("revoke derruba sessão ativa e apaga o usuário", async () => {
     },
   };
 
-  await createMikrotikNetwork(client).revokeAccess("wifi-abc");
+  await createMikrotikNetwork(client).revokeAccess({ username: "wifi-abc" });
   assert.deepEqual(deleted, [
     "/ip/hotspot/active/%2AA",
     "/ip/hotspot/user/%2A1",

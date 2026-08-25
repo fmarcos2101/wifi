@@ -34,10 +34,10 @@ Não precisa de servidor no hotel (nem mini PC, nem Raspberry Pi).
 | Peça | Onde |
 | --- | --- |
 | Site do hóspede, painel e pagamento | Nuvem (VPS) |
-| MikroTik | Só no hotel, como roteador Wi-Fi |
-| Celular do hóspede | Entra no Wi-Fi, abre o site na nuvem, depois autentica no Hotspot |
+| MikroTik **ou** OpenWrt | Só no hotel, como roteador Wi-Fi |
+| Celular do hóspede | Entra no Wi-Fi, abre o site na nuvem, depois autentica no portal |
 
-O app na nuvem precisa **falar com o MikroTik** para criar/apagar o usuário do Hotspot. O caminho simples, sem abrir a API na internet, é **WireGuard no próprio MikroTik** (RouterOS 7 já tem) até o VPS. O hóspede continua autenticando em `http://10.5.50.1/login` — isso roda no celular, na rede do hotel.
+O app na nuvem precisa **falar com o roteador** para liberar/cortar o acesso. O caminho simples, sem abrir a API na internet, é **WireGuard** até o VPS (RouterOS 7 ou OpenWrt).
 
 Não use só Vercel/Netlify para este passo: a API do roteador precisa de um VPS com IP estável (Hostinger, DigitalOcean, Railway, etc.).
 
@@ -90,6 +90,28 @@ O restante da internet continua fechado. Cole `scripts/mikrotik-walled-garden.rs
 
 O app do banco no celular às vezes usa o 4G, não o Wi-Fi. Isso é normal e ajuda o PIX copiar-e-colar.
 
+## OpenWrt
+
+O MikroTik continua suportado. Para usar OpenWrt no lugar, o portal cativo é o **openNDS**.
+
+1. Instale o openNDS no roteador (`scripts/openwrt-opennds.sh`).
+2. Cole o walled garden (`scripts/openwrt-walled-garden.sh` ou o bloco do painel).
+3. O openNDS abre o app com `clientmac` na URL.
+4. No pagamento, o app chama `ndsctl auth <mac> <minutos>` via ubus.
+5. No fim do tempo (ou Encerrar no painel), chama `ndsctl deauth`.
+
+No `.env` da nuvem:
+
+```env
+NETWORK_PROVIDER=openwrt
+OPENWRT_HOST=10.8.0.2
+OPENWRT_USER=root
+OPENWRT_PASSWORD=senha
+APP_URL=https://SEU-DOMINIO
+```
+
+O usuário do ubus precisa poder executar arquivo (`file.exec`) para o `ndsctl`. WireGuard até o VPS, igual ao MikroTik.
+
 Para desenvolver sem roteador, mantenha `NETWORK_PROVIDER=mock`.
 
 ## Pagamento
@@ -129,6 +151,6 @@ Para simular o captive portal: `http://localhost:3000/?mac=AA:BB:CC:DD:EE:FF`
 src/app/                  telas do hóspede e do painel
 src/app/api/payments/     webhook que confirma o pagamento
 src/lib/access.ts         cria, expira e encerra sessões
-src/lib/network/          MikroTik REST + modo demo
+src/lib/network/          MikroTik, OpenWrt/openNDS e modo demo
 src/lib/payments/         gera a cobrança PIX
 ```

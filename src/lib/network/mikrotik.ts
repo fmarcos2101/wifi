@@ -26,7 +26,8 @@ export function createMikrotikNetwork(client: RouterOsClient): NetworkController
       await client.put("/ip/hotspot/user", payload);
     },
 
-    async revokeAccess(username: string) {
+    async revokeAccess(input) {
+      const username = input.username;
       const active = await client.get(
         `/ip/hotspot/active?user=${encodeURIComponent(username)}`,
       );
@@ -77,9 +78,9 @@ export const mikrotikNetwork: NetworkController = {
       input,
     );
   },
-  async revokeAccess(username) {
+  async revokeAccess(input) {
     return createMikrotikNetwork(createRouterOsClient(mikrotikConfigFromEnv())).revokeAccess(
-      username,
+      input,
     );
   },
 };

@@ -14,6 +14,7 @@ export default async function HomePage({
 }: {
   searchParams: Promise<{
     mac?: string;
+    clientmac?: string;
     "link-login-only"?: string;
     "link-login"?: string;
   }>;
@@ -27,7 +28,7 @@ export default async function HomePage({
   }
 
   const params = await searchParams;
-  const deviceMac = normalizeMac(params.mac) ?? "";
+  const deviceMac = normalizeMac(params.mac ?? params.clientmac) ?? "";
   const login = params["link-login-only"] ?? params["link-login"] ?? "";
   const plans = await prisma.plan.findMany({
     where: { active: true },

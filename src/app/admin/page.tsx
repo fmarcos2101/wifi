@@ -11,8 +11,12 @@ import { isAdminAuthenticated } from "@/lib/auth";
 import { hotelName } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { formatBRL, formatHours, formatRemaining, startOfToday } from "@/lib/money";
-import { isMikrotikEnabled, networkLabel } from "@/lib/network";
-import { renderWalledGardenScript, walledGardenHosts } from "@/lib/network/walled-garden";
+import { isMikrotikEnabled, isOpenWrtEnabled, networkLabel } from "@/lib/network";
+import {
+  renderOpenWrtWalledGardenScript,
+  renderWalledGardenScript,
+  walledGardenHosts,
+} from "@/lib/network/walled-garden";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +54,7 @@ export default async function AdminPage() {
   const revenueCents = paidToday._sum.amountCents ?? 0;
   const paymentHosts = walledGardenHosts();
   const paymentScript = renderWalledGardenScript(paymentHosts);
+  const openwrtScript = renderOpenWrtWalledGardenScript(paymentHosts);
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 py-8">
@@ -76,9 +81,8 @@ export default async function AdminPage() {
       <section className="mt-10">
         <h2 className="text-lg font-semibold">Internet para pagar</h2>
         <p className="mt-1 text-sm leading-6 text-slate-500">
-          No MikroTik isso se chama walled garden: até o PIX confirmar, o hóspede só
-          acessa este portal e o pagamento. O restante da internet continua
-          bloqueado.
+          Até o PIX confirmar, o roteador só deixa passar este portal e o pagamento.
+          No MikroTik isso é walled garden; no OpenWrt é a lista do openNDS.
         </p>
         <ul className="mt-3 grid gap-1 rounded-2xl bg-white px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200">
           {paymentHosts.map((host) => (
@@ -96,11 +100,22 @@ export default async function AdminPage() {
               Aplicar no MikroTik
             </button>
           </form>
-        ) : (
+        ) : null}
+        {isOpenWrtEnabled() ? (
           <pre className="mt-3 overflow-x-auto rounded-2xl bg-slate-900 p-4 text-xs leading-5 text-slate-100">
-            {paymentScript}
+            {openwrtScript}
           </pre>
-        )}
+        ) : null}
+        {!isMikrotikEnabled() && !isOpenWrtEnabled() ? (
+          <div className="mt-3 grid gap-3">
+            <pre className="overflow-x-auto rounded-2xl bg-slate-900 p-4 text-xs leading-5 text-slate-100">
+              {`# MikroTik\n${paymentScript}`}
+            </pre>
+            <pre className="overflow-x-auto rounded-2xl bg-slate-900 p-4 text-xs leading-5 text-slate-100">
+              {`# OpenWrt / openNDS\n${openwrtScript}`}
+            </pre>
+          </div>
+        ) : null}
       </section>
 
       <section className="mt-10">
@@ -166,7 +181,7 @@ export default async function AdminPage() {
           </select>
           <input
             name="deviceMac"
-            placeholder="MAC (opcional)"
+            placeholder="MAC (obrigatório no OpenWrt)"
             className="h-11 rounded-xl border border-slate-200 px-3 text-sm"
           />
           <button

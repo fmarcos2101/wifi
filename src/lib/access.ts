@@ -12,9 +12,10 @@ export async function expireOverdueSessions(now = new Date()) {
 
   const network = getNetworkController();
   for (const session of overdue) {
-    if (session.networkUser) {
-      await network.revokeAccess(session.networkUser);
-    }
+    await network.revokeAccess({
+      username: session.networkUser ?? "",
+      mac: session.deviceMac,
+    });
   }
 
   await prisma.session.updateMany({
@@ -138,9 +139,10 @@ export async function revokeSession(sessionId: string) {
   if (session.status !== "ACTIVE") return session;
 
   const network = getNetworkController();
-  if (session.networkUser) {
-    await network.revokeAccess(session.networkUser);
-  }
+  await network.revokeAccess({
+    username: session.networkUser ?? "",
+    mac: session.deviceMac,
+  });
 
   const updated = await prisma.session.update({
     where: { id: sessionId },

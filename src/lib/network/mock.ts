@@ -4,7 +4,7 @@ export const mockNetwork: NetworkController = {
   async grantAccess(input: GrantAccessInput) {
     console.info("[network:mock] grant", input);
   },
-  async revokeAccess(username: string) {
-    console.info("[network:mock] revoke", username);
+  async revokeAccess(input) {
+    console.info("[network:mock] revoke", input);
   },
 };

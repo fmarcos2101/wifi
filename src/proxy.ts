@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 function rememberHotspotParams(request: NextRequest, response: NextResponse) {
-  const mac = request.nextUrl.searchParams.get("mac");
+  const mac =
+    request.nextUrl.searchParams.get("mac") ??
+    request.nextUrl.searchParams.get("clientmac");
   const login =
     request.nextUrl.searchParams.get("link-login-only") ??
     request.nextUrl.searchParams.get("link-login");

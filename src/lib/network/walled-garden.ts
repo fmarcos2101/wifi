@@ -48,6 +48,10 @@ export function walledGardenHosts() {
   ].filter((host, index, all) => all.indexOf(host) === index);
 }
 
+export function openWrtFqdn(host: string) {
+  return host.replace(/^\*\./, "");
+}
+
 export function renderWalledGardenScript(hosts = walledGardenHosts()) {
   const lines = [
     "# Walled garden: o hóspede só alcança o portal e o PIX até pagar.",
@@ -56,6 +60,24 @@ export function renderWalledGardenScript(hosts = walledGardenHosts()) {
       (host) =>
         `add action=allow comment=${WALLED_GARDEN_COMMENT} dst-host=${host}`,
     ),
+  ];
+  return lines.join("\n");
+}
+
+export function renderOpenWrtWalledGardenScript(hosts = walledGardenHosts()) {
+  const fqdns = hosts.map(openWrtFqdn);
+  const unique = fqdns.filter((host, index) => fqdns.indexOf(host) === index);
+  const lines = [
+    "#!/bin/sh",
+    "# Walled garden do openNDS: portal e PIX até o pagamento.",
+    "# Cole no SSH do OpenWrt.",
+    "set -e",
+    ...unique.map(
+      (host) =>
+        `uci add_list opennds.@opennds[0].walledgarden_fqdn_list='${host}'`,
+    ),
+    "uci commit opennds",
+    "/etc/init.d/opennds restart",
   ];
   return lines.join("\n");
 }

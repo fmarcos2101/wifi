@@ -7,7 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/network/mikrotik.test.ts",
+    "test": "tsx --test src/lib/network/mikrotik.test.ts src/lib/network/openwrt.test.ts",
     "db:setup": "prisma db push && tsx prisma/seed.ts",
     "postinstall": "prisma generate"
   },
